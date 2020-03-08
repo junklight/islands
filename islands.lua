@@ -17,8 +17,8 @@ engine.name = "MT7"
 local g = grid.connect()
 
 local soundscaper = require 'Islands/lib/soundscaper'
-local kria = require 'Kria/lib/kria'
-local BeatClock = require 'beatclock'
+local kria = require 'Islands/lib/kria'
+local BeatClock = require 'Islands/lib/beattest'
 local clk = BeatClock.new()
 
 local root = { x=5, y=5 }
@@ -130,8 +130,8 @@ function write_preset(prefix,n)
   io.output(fd)
   for k,param in pairs(params.params) do
     if param.id and param.t ~= params.tTRIGGER then
-       if string.find(param.name,prefix) == 1 then 
-         local pname = string.sub(param.name,4)
+       if string.find(param.id,prefix) == 1 then 
+         local pname = string.sub(param.id,4)
          io.write(string.format("%s: %s\n", quote(pname), param:get()))
       end
     end
@@ -140,7 +140,18 @@ function write_preset(prefix,n)
 end
 
 function read_preset(prefix,n)
+  local parampat = "\"([%s%w%p]-)\"%s*:%s*([%d%p]+)%s*"
+  local filename = n .. ".mt7preset"
+  local fd = io.open(_path.data .. "Islands/"..filename, "r")
+  for pid, n in string.gmatch(fd:read("*all"),parampat ) do
+    pid = prefix .. pid
+    print(pid .. " -> " .. tonumber(n) )
+    local index = params:set(pid, tonumber(n))
+    
+  end
   
+  
+  fd:close()
 end
 
 
@@ -418,6 +429,7 @@ function control_row_play(x,y,z)
       end
     elseif pset_mode == READ_PSETMODE then
       print("read preset " .. pmode_num)
+      read_preset("l" .. current_layer .. "_",pmode_num)
     end
 	  pmode_num = "-"
 	  pset_mode = OFF_PSETMODE
