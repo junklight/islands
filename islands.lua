@@ -1,5 +1,5 @@
 -- Islands
--- based on earthsea + FM7 + sequencers
+-- based on earthsea + FM7 + kria + softcut
 --
 -- 4 layer instrument
 -- using grid 
@@ -10,9 +10,12 @@
 -- Button 2 + 3 - settings 
 --
 local islandsparams = require 'Islands/lib/islandsparams'
+local MusicUtil = require "musicutil"
 local MT = require 'Islands/lib/mt7'
+local UI = require "ui"
 local esea = require 'Islands/lib/esea'
 local tab = require 'tabutil'
+local util = require 'util'
 engine.name = "MT7"
 local g = grid.connect()
 
@@ -28,16 +31,21 @@ lit[2] = {}
 lit[3] = {}
 lit[4] = {}
 local current_layer = 1
--- think we need table per layer
--- but small steps
--- for now just put all three 
--- sequencers for the layer 
--- into a table 
-local sequencer = {} 
-sequencer[1] = soundscaper.new()
-sequencer[2] = soundscaper.new()
-sequencer[3] = soundscaper.new()
-sequencer[4] = soundscaper.new()
+
+local loct = {} 
+loct[1] = 1
+loct[2] = 1
+loct[3] = 1
+loct[4] = 1
+
+-- TODO 
+-- Kria note generation using scales 
+-- scales display from kria midi (and any other things I need to bring over)
+-- grid lighting using scale (or just white notes lit)
+-- indicate in read which presets exist 
+-- mini keyboard on edit sound screen
+-- time 
+
 local screen_framerate = 15
 local screen_refresh_metro
 local MAX_NUM_VOICES = 16
@@ -89,6 +97,13 @@ local pmode_num = "-"
 
 local buttons_down = {}
 
+-- SOFTCUT 
+local loopone = 0
+local looponeedit = 0
+local looptwo = 0
+local looptwoedit = 0
+local looplenspec = controlspec.new(.25, 60, "exp", .01, 2, "secs")
+local loopdecspec = controlspec.new(0.0, 1.0, "lin", .01, 0.78, "")
 
 local vel = 1.0
 
@@ -102,6 +117,10 @@ local ids = 10000
 local clock_count = 1
 local clocked = true
 local preset_mode = false
+local root_note = 60
+local screen_notes = { -1 , -1 , -1 , -1 }
+local playback_icon = UI.PlaybackIcon.new(121, 55)
+playback_icon.status = 1
 
 -- presets are slightly interesting 
 -- there are 4 sets of identical params 
@@ -142,47 +161,115 @@ end
 function read_preset(prefix,n)
   local parampat = "\"([%s%w%p]-)\"%s*:%s*([%d%p]+)%s*"
   local filename = n .. ".mt7preset"
-  local fd = io.open(_path.data .. "Islands/"..filename, "r")
-  for pid, n in string.gmatch(fd:read("*all"),parampat ) do
-    pid = prefix .. pid
-    print(pid .. " -> " .. tonumber(n) )
-    local index = params:set(pid, tonumber(n))
-    
+  local fpath = _path.data .. "Islands/"..filename
+  if util.file_exists(fpath) then
+    local fd = io.open(fpath, "r")
+    for pid, n in string.gmatch(fd:read("*all"),parampat ) do
+      pid = prefix .. pid
+      print(pid .. " -> " .. tonumber(n) )
+      local index = params:set(pid, tonumber(n))
+    end
+    fd:close()
   end
-  
-  
-  fd:close()
 end
 
 
 function make_note(track,n,oct,dur,tmul,rpt,glide) 
-		x = 0
-		y = 0
-    id = ids
-		ids = ids + 1
-		hz = esea.getHz(n,oct)
-		vel = 0.7
+		local x = 0
+		local y = 0
+    local id = ids
+		local ids = ids + 1
+		local oct = oct + 2
+		local nte = k:scale_note(n) 
+		local pnote = nte + (oct * 12 ) + (root_note - 60)
+		print("note ".. pnote .. "(" .. pnote .. ")" .. " oct " .. oct .. " note "  .. MusicUtil.note_num_to_name(pnote) )
+		
+		local hz = MusicUtil.note_num_to_freq(pnote)
+		local vel = 0.7
+		-- ((7-e.y)*5) + e.x
+		y = ((nte/5) + 7 ) % 7
+		x = nte - y
+		print("x ".. x .. " y " .. y)
     makenote(1,id,track,hz,vel,x,y) 
 		print("[" .. track .. "] Note " .. n .. "/" .. oct .. " for " .. dur .. " repeats " .. rpt .. " glide " .. glide  )
 		-- ignore repeats and glide for now 
 		table.insert(note_off_list,{ timestamp = clock_count + (dur * tmul), id = id,hz = hz,track = track}) 
 end
 
-function init()
-	clk:add_clock_params()
+function init_sc_buffer(n)
+  softcut.level_input_cut(1, n, 0.5)
+  softcut.level_input_cut(2, n, 0.5)
+  softcut.enable(n, 1)
+  softcut.level(n, 1)
+  softcut.buffer(n, n)
 
+  softcut.rate(n, 3)
+  softcut.play(n, 1)
+
+  softcut.position(n, 1)
+  softcut.fade_time(n, 0.25)
+
+  softcut.loop(n, 1)
+  softcut.loop_start(n, 0)
+  softcut.loop_end(n, 60)
+
+  softcut.rec(n, 1)
+  softcut.rec_offset(n, -0.06)
+  softcut.rec_level(n, 0)
+  softcut.pre_level(n, .75)
+
+  softcut.rate_slew_time(n, 0)
+  softcut.level_slew_time(n, 0.25)
+end
+  
+local function nsync(x)
+	if x == 2 then
+		k.note_sync = true
+	else
+		k.note_sync = false
+	end
+end
+
+local function lsync(x)
+	if x == 1 then
+		k.loop_sync = 0
+  elseif x == 2 then
+		k.loop_sync = 1
+  else
+		k.loop_sync = 2
+	end
+end
+
+function init()
+  softcut.reset()
+  softcut.buffer_clear()
+  k = kria.loadornew("Islands/kria.data")
+  k:init(make_note)
+	clk:add_clock_params()
 	params:add_separator()
-	params:add{type="option",name="Note Sync",id="note_sync",options={"Off","On"},default=2, action=nsync}
+	params:add{type="option",name="Note Sync",id="note_sync",options={"Off","On"},default=1, action=nsync}
 	params:add{type="option",name="Loop Sync",id="loop_sync",options={"None","Track","All"},default=1, action=lsync}
 	params:add_separator()
+	params:add{type="control", name="loop length 1",id="loop_length_1", 
+	  controlspec=looplenspec , 
+	  action=function(x) softcut.loop_end(1, x) end  }
+	params:add{type="control", name="loop decay 1",id="loop_decay_1", 
+	  controlspec = loopdecspec,
+	  action=function(x) softcut.pre_level(1, x) end  }
+	params:add{type="control", name="loop length 2",id="loop_length_2", 
+	  controlspec=looplenspec , 
+	  action=function(x) softcut.loop_end(2, x) end  }
+	params:add{type="control", name="loop decay 2",id="loop_decay_2", 
+	  controlspec = loopdecspec,
+	  action=function(x) softcut.pre_level(2, x) end  }
 	islandsparams.add_params()
   MT.add_params()
-	-- for k,p in pairs(params.params) do 
-	--	v.action = function(v) gridredraw(); p.action(v) end 
-	-- end
-	k = kria.loadornew("Islands/kria.data")
-	--k = kria.new()
-  k:init(make_note)
+  
+  init_sc_buffer(1)
+  init_sc_buffer(2)
+  audio.level_eng_cut(1)
+
+
   clk.on_step = step
   clk.on_select_internal = function() clk:start() end
   -- clk.on_select_external = reset_pattern
@@ -199,7 +286,7 @@ function init()
     redraw()
   end ,
   time = 1 / screen_framerate }
-screen_refresh_metro:start()
+  screen_refresh_metro:start()
 end
 
 function step()
@@ -226,10 +313,33 @@ function g.key(x, y, z)
 	end
   if y ==8  then
 		if mode == PLAY_MODE then
-			if x >= 8 and x<= 12 then 
-				-- sequencers have {8-12,8} as controls
-				-- in PLAY Mode only 
-				sequencer[current_layer]:event(x,y,z)
+			if x >= 7 and x<= 10 then 
+			  -- softcut loops 
+			  if x == 7 and  z == 1 then 
+				  looponeedit = 1
+			  elseif x == 7 and  z == 0 then 
+				  looponeedit = 0
+				elseif x == 8 and  z == 1 then 
+				  if loopone == 0 then 
+				    loopone = 1
+				    softcut.rec_level(1, 0.8)
+				  else
+				    loopone = 0
+				    softcut.rec_level(1, 0)
+				  end
+				elseif x == 9 and  z == 1 then 
+				  if looptwo == 0 then 
+				    looptwo = 1
+				    softcut.rec_level(2, 0.8)
+				  else
+				    looptwo = 0
+				    softcut.rec_level(2, 0)
+				  end
+				elseif x == 10 and  z == 1 then 
+				  looptwoedit = 1
+			  elseif x == 10 and  z == 0 then 
+				  looptwoedit = 0
+				end
 			else
 				control_row_play(x,y,z)
 			end
@@ -278,7 +388,22 @@ function enc(n,delta)
   if n == 1 then
     mix:delta("output", delta)
   end
-  if pset_mode ~= OFF_PSETMODE then 
+  if looponeedit == 1 or looptwoedit == 1 then 
+    if looponeedit == 1 then
+      if n == 2 then
+        params:delta("loop_length_1", delta)
+      elseif n == 3 then 
+        params:delta("loop_decay_1", delta)
+      end
+    elseif looptwoedit == 1 then 
+      if n == 2 then
+        params:delta("loop_length_2", delta)
+      elseif n == 3 then 
+        params:delta("loop_decay_2", delta)
+      end
+    end 
+    return
+  elseif pset_mode ~= OFF_PSETMODE then 
     if n == 2 then
       if delta == 1 then 
          if pmode_num == "-" then
@@ -295,8 +420,7 @@ function enc(n,delta)
       end
     end
     return
-  end
-	if mode == PLAY_MODE then 
+	elseif mode == PLAY_MODE then 
 		if n == 2 then 
 				vel = vel + (delta/200)
 				if vel < 0 then 
@@ -304,11 +428,13 @@ function enc(n,delta)
 				elseif vel > 1 then 
 					vel = 1.0
 				end
-	end
+	  end
 	elseif mode == EDIT_MODE then 
 		edit_enc(n,delta)
 	elseif mode == SETTINGS_MODE then
 		settings_enc(n,delta)
+	elseif mode == SEQ_MODE then 
+	  kria_enc(n,delta)
 	end 
 end
 
@@ -368,35 +494,55 @@ function redraw()
   screen.clear()
   screen.aa(0)
   screen.line_width(1)
+	-- the loop edit modes are temporary (holding a key down)
+	-- and take over everything else 
+	-- at somepoint maybe will get to refactor this into a 
+	-- framework but just going with how it is for the moment
+	-- thought: do we want to do a popup for these  
+	-- like the nc01 drone controls ?? 
+	if looponeedit == 1 or looptwoedit == 1 then 
+	  if looponeedit == 1 then 
+	    screen.move(44,25)
+	    screen.text("Loop One")
+	    screen.move(15,40)
+	    screen.text("length: " .. params:get("loop_length_1") .. " decay: " .. params:get("loop_decay_1") )
+	  else 
+	    screen.move(44,25)
+	    screen.text("Loop Two")
+	    screen.move(15,40)
+	    screen.text("length: " .. params:get("loop_length_2") .. " decay: " .. params:get("loop_decay_2") )
+	  end
+	else
 	-- top line is mode line and common to all modes 
 	-- except settings
-	if mode ~= SETTINGS_MODE then
-		local layn = "Layer: " 
-		screen.move(0,10)
-		screen.text(layn .. current_layer)
-	end
-	screen.move(100,10)
-	if mode == PLAY_MODE then 
-		screen.text("play")
-		if pset_mode ~= OFF_PSETMODE then
-	    draw_preset()
-	   else
-		  screen_playnotes()
-		end
-	elseif mode == EDIT_MODE then
-		screen.text("edit")
-		if pset_mode ~= OFF_PSETMODE then
-	    draw_preset()
-	   else
-		  screen_editsound()
-		end
-	elseif mode == SEQ_MODE then 
-		screen.text("seq")
-	elseif mode == SETTINGS_MODE then 
-	  screen.move(90,10)
-		screen.text("settings")
-		screen_settings()
-	end 
+	  if mode ~= SETTINGS_MODE then
+	  	local layn = "Layer: " 
+  		screen.move(0,10)
+  		screen.text(layn .. current_layer)
+  	end
+  	screen.move(100,10)
+  	if mode == PLAY_MODE then 
+  		screen.text("play")
+  		if pset_mode ~= OFF_PSETMODE then
+  	    draw_preset()
+  	   else
+  		  screen_playnotes()
+  		end
+  	elseif mode == EDIT_MODE then
+  		screen.text("edit")
+  		if pset_mode ~= OFF_PSETMODE then
+  	    draw_preset()
+  	   else
+  		  screen_editsound()
+  		end
+  	elseif mode == SEQ_MODE then 
+  		screen_kria()
+  	elseif mode == SETTINGS_MODE then 
+  	  screen.move(90,10)
+  		screen.text("settings")
+  		screen_settings()
+  	end
+  end
   screen.update()
 end
 
@@ -433,21 +579,64 @@ function control_row_play(x,y,z)
     end
 	  pmode_num = "-"
 	  pset_mode = OFF_PSETMODE
-	elseif y == 16 then
+	elseif x == 5 then
 		engine.stopAll()
+	elseif x == 15 and z == 1 then
+
+	  loct[current_layer] = loct[current_layer] / 2.0
+	  if loct[current_layer] < 0.25 then 
+	    loct[current_layer] = 0.25
+	  end
+	  print("oct down ".. loct[current_layer])
+	elseif x == 16 and z == 1then
+	  loct[current_layer] = loct[current_layer] * 2.0
+	  if loct[current_layer] > 4.0 then 
+	    loct[current_layer] = 4.0
+	  end
+	  print("oct up ".. loct[current_layer])
 	end
 end
 
 function draw_control_row_play() 
-	-- sequencers are meant to draw 
-	-- (and listen for)
-	-- their own controls 
-	-- they are given 8,8-12 for the moment 
-	-- this ISN'T policed 
-	-- they are just meant to be good citizens
-	sequencer[current_layer]:draw_control_row(g)
+  g:led(7,8,2)
+	if loopone == 1 then 
+	  g:led(8,8,13)
+	else
+	  g:led(8,8,0)
+	end
+	if looptwo == 1 then 
+	  g:led(9,8,13)
+	else
+	  g:led(9,8,0)
+	end 
+	g:led(10,8,2)
+	
+	
 	g:led(13,8,3)
 	g:led(14,8,3)
+	
+
+	
+	if loct[current_layer] < 1 then 
+    if loct[current_layer] == 0.5 then 
+      lvl = 5
+    else
+      lvl = 10
+    end
+    g:led(15,8,lvl)
+    g:led(16,8,0)
+	elseif loct[current_layer] > 1.0 then
+    g:led(15,8,0)
+    if loct[current_layer] == 2.0 then 
+      lvl = 5
+    else
+      lvl = 10
+    end
+    g:led(16,8,lvl )
+	else 
+	  g:led(15,8,0)
+	  g:led(16,8,0)
+	end
 
 end
 
@@ -514,20 +703,20 @@ end
 
 function grid_note(e,layer)
   local note = ((7-e.y)*5) + e.x
-	local hz = esea.getHzET(note)
+	local hz = esea.getHzET(note) 
 	if layer == nil then
 		 layer = current_layer
 	end
+	-- local grid octave adjustment 
+	hz = hz * loct[layer]
   if e.state > 0 then
     if nvoices < MAX_NUM_VOICES then
       makenote(1,e.id,layer,hz,vel,e.x,e.y) 
-			sequencer[current_layer]:watch(makenote,1,e.id,hz,vel,layer,e.x,e.y)
       nvoices = nvoices + 1
     end
   else
     if lit[current_layer][e.id] ~= nil then
       makenote(0,e.id,layer,hz,vel,e.x,e.y)
-			sequencer[current_layer]:watch(makenote,0,e.id,hz,vel,layer,e.x,e.y)
      	lit[current_layer][e.id] = nil
       nvoices = nvoices - 1
     end
@@ -742,7 +931,7 @@ end
 --------------------------------------------------------------
 ----  Settings Mode 
 --------------------------------------------------------------
---
+
 
 local settings_display = {
 }
@@ -765,6 +954,52 @@ function settings_enc(n,delta)
 end
 
 function settings_event(x,y,z)
+end
+
+--------------------------------------------------------------
+----  Kria Mode 
+--------------------------------------------------------------
+
+function screen_kria() 
+  screen.clear()
+
+  if k.mode == kria.mScale then   
+    screen.move(10,20)
+    screen.text("Root: " .. MusicUtil.note_num_to_name(root_note,true))
+    screen.font_size(8)
+    screen.font_face(1)
+    for idx = 1,7 do
+      screen.move(15 + (idx - 1 ) * 16,40)
+      local n =  k:scale_note(idx)  +  root_note 
+      screen.text(MusicUtil.note_num_to_name(n))
+    end
+  else
+    screen.move(10,20)
+    screen.text("Root: " .. MusicUtil.note_num_to_name(root_note,true))
+    screen.move(70,20)
+    if clk.external then 
+      screen.text("BPM: ext")
+    else 
+      screen.text("BPM: " .. params:get("bpm"))
+    end
+    for idx = 1,4 do 
+      screen.move(15 + (idx - 1 ) * 27,40)
+      if screen_notes[idx] > 0 then
+       screen.text(MusicUtil.note_num_to_name(screen_notes[idx] , true))
+      end
+    end
+    playback_icon:redraw()
+  end
+  screen.update()
+end
+
+function kria_enc(n,delta)
+  if n == 2 then 
+    root_note = util.clamp(root_note + delta, 24, 72)
+    -- print(root_note)
+  elseif n == 3 then       
+    params:delta("bpm",delta)
+  end
 end
 
 
