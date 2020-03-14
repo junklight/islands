@@ -21,8 +21,16 @@ local g = grid.connect()
 
 local soundscaper = require 'Islands/lib/soundscaper'
 local kria = require 'Islands/lib/kria'
+
+local options = {}
+options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
+options.STEP_LENGTH_DIVIDERS = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
+
+
 local BeatClock = require 'Islands/lib/beattest'
 local clk = BeatClock.new()
+
+
 
 local root = { x=5, y=5 }
 local lit = {}
@@ -30,7 +38,10 @@ lit[1] = {}
 lit[2] = {}
 lit[3] = {}
 lit[4] = {}
+local screen_notes = { -1 , -1 , -1 , -1 }
 local current_layer = 1
+
+local note_list = {}
 
 local loct = {} 
 loct[1] = 1
@@ -39,12 +50,8 @@ loct[3] = 1
 loct[4] = 1
 
 -- TODO 
--- Kria note generation using scales 
--- scales display from kria midi (and any other things I need to bring over)
 -- grid lighting using scale (or just white notes lit)
--- indicate in read which presets exist 
 -- mini keyboard on edit sound screen
--- time 
 
 local screen_framerate = 15
 local screen_refresh_metro
@@ -174,26 +181,41 @@ function read_preset(prefix,n)
 end
 
 
-function make_note(track,n,oct,dur,tmul,rpt,glide) 
-		local x = 0
-		local y = 0
-    local id = ids
-		local ids = ids + 1
-		local oct = oct + 2
-		local nte = k:scale_note(n) 
-		local pnote = nte + (oct * 12 ) + (root_note - 60)
-		print("note ".. pnote .. "(" .. pnote .. ")" .. " oct " .. oct .. " note "  .. MusicUtil.note_num_to_name(pnote) )
-		
-		local hz = MusicUtil.note_num_to_freq(pnote)
-		local vel = 0.7
-		-- ((7-e.y)*5) + e.x
-		y = ((nte/5) + 7 ) % 7
-		x = nte - y
-		print("x ".. x .. " y " .. y)
-    makenote(1,id,track,hz,vel,x,y) 
-		print("[" .. track .. "] Note " .. n .. "/" .. oct .. " for " .. dur .. " repeats " .. rpt .. " glide " .. glide  )
-		-- ignore repeats and glide for now 
-		table.insert(note_off_list,{ timestamp = clock_count + (dur * tmul), id = id,hz = hz,track = track}) 
+
+
+function make_note(track,n,oct,dur,tmul,rpt,glide)
+		local nte = k:scale_note(n)
+		-- print("[" .. track  .. "] Note " .. nte .. "/" .. oct .. " for " .. dur .. " repeats " .. rpt .. " glide " .. glide  )
+		-- ignore repeats and glide for now
+		-- currently 1 == C3 (60 = 59 + 1)
+		local r = rpt + 1
+		local notedur = 6  * (dur/r * tmul)
+		for rptnum = 1,r do
+		  midi_note = nte + ( (oct - 3) * 12 ) + root_note
+		  -- m:note_on(midi_note,100,midich)
+		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midich , note = midi_note })
+		  table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur)) - 0.1, channel = midich , note = midi_note })
+		end
+end
+
+function step()
+	clock_count = clock_count + 1
+	table.sort(note_list,function(a,b) return a.timestamp < b.timestamp end)
+	while note_list[1] ~= nil and note_list[1].timestamp <= clock_count do
+		if note_list[1].action == 1 then 
+		  local hz = MusicUtil.note_num_to_freq(note_list[1].note)
+		  local vel = 0.8
+		  makenote(1,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
+		  screen_notes[note_list[1].track + 1] = note_list[1].note
+		else 
+		  local hz = MusicUtil.note_num_to_freq(note_list[1].note)
+		  local vel = 0.8
+		  makenote(0,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
+		  screen_notes[note_list[1].track + 1] = -1
+		end
+		table.remove(note_list,1)
+	end
+	k:clock()
 end
 
 function init_sc_buffer(n)
@@ -245,7 +267,22 @@ function init()
   softcut.buffer_clear()
   k = kria.loadornew("Islands/kria.data")
   k:init(make_note)
-	clk:add_clock_params()
+  clk:add_clock_params()
+	params:add{type = "option", id = "step_length", name = "step length", options = options.STEP_LENGTH_NAMES, default = 6,
+  action = function(value)
+    clk.ticks_per_step = ( 96 / (options.STEP_LENGTH_DIVIDERS[value])  ) 
+    clk.steps_per_beat = ( options.STEP_LENGTH_DIVIDERS[value] ) 
+    -- clk.ticks_per_step = 24
+    -- clk.steps_per_beat = 4
+    clk:bpm_change(clk.bpm)
+    print("clock " .. clk.ticks_per_step .. " steps " .. clk.steps_per_beat)
+  end}
+	clk.on_step = step
+  clk.on_start = function() k:reset() end
+  clk.beats_per_bar = 4
+  clk.on_select_internal = function() clk:start() end
+  clk.on_select_external = function() print("external") end
+  
 	params:add_separator()
 	params:add{type="option",name="Note Sync",id="note_sync",options={"Off","On"},default=1, action=nsync}
 	params:add{type="option",name="Loop Sync",id="loop_sync",options={"None","Track","All"},default=1, action=lsync}
@@ -270,8 +307,7 @@ function init()
   audio.level_eng_cut(1)
 
 
-  clk.on_step = step
-  clk.on_select_internal = function() clk:start() end
+
   -- clk.on_select_external = reset_pattern
 	params:add_separator()
 	params:add_number("clock_ticks", "clock ticks", 1, 96,1)
@@ -289,23 +325,10 @@ function init()
   screen_refresh_metro:start()
 end
 
-function step()
-	clock_count = clock_count + 1
-	table.sort(note_off_list,function(a,b) return a.timestamp < b.timestamp end)
-	while note_off_list[1] ~= nil and note_off_list[1].timestamp <= clock_count do
-		print("note off " .. note_off_list[1].id)
-    makenote(0,note_off_list[1].id,note_off_list[1].track,note_off_list[1].hz,0.7,0,0) 
-		table.remove(note_off_list,1)
-	end
-	if clock_count % params:get("clock_ticks") == 0 then 
-	   if clocked then 
-		   k:clock()	
-	   end
-	end
-end
+
 
 function g.key(x, y, z)
-  print("key",x,y,z)
+  -- print("key",x,y,z)
 	if mode == SEQ_MODE then 
 	    k:event(x,y,z)
 			gridredraw()
@@ -439,7 +462,7 @@ function enc(n,delta)
 end
 
 function key(n,z)
-  print("button",n,z)
+  -- print("button",n,z)
 	-- using the keys to switch between modes 
 	-- 2    play <--> edit 
 	-- 3    play <--> seq 
@@ -650,18 +673,26 @@ function screen_playnotes()
 	local cnt = 0
 	local ln = "Notes:"
 	for k,v in pairs(lit[current_layer]) do
-		ln = ln .." " .. esea.note_name(v.x,v.y) 
-		cnt = cnt + 1
-		if cnt == 7 then 
-				screen.move(0,10*i)
-				screen.text(ln)
-				cnt = 0
-				i = i + 1
-				ln = "     "
+	  if v.x ~= 0 and v.y ~= 0 then 
+  		ln = ln .." " .. esea.note_name(v.x,v.y) 
+  		cnt = cnt + 1
+  		if cnt == 7 then 
+  				screen.move(0,10*i)
+  				screen.text(ln)
+  				cnt = 0
+  				i = i + 1
+  				ln = "     "
+  		end
 		end
-	end
+  end
   screen.move(0,10*i)
   screen.text(ln)
+  for idx = 1,4 do 
+      screen.move(15 + (idx - 1 ) * 27,33)
+      if screen_notes[idx] > 0 then
+       screen.text(MusicUtil.note_num_to_name(screen_notes[idx] , true))
+      end
+    end
 	screen.move(0,10*5)
 	screen.text("Velocity " .. vel)
 end
@@ -688,14 +719,15 @@ function play_notes(x,y,z)
   grid_note(e,current_layer)
 end
 
-function makenote(state,id,layer,hz,vel,x,y) 
+function makenote(state,id,layer,hz,vel,x,y,n) 
 	if state == 1 then 
-	print("engine start " .. layer .. " " .. id .. " " .. hz .. " " .. vel )
-   engine.start(layer,id, hz,vel)
-   lit[current_layer][id] = {}
-   lit[current_layer][id].x = x
-   lit[current_layer][id].y = y
+	-- print("engine start " .. layer .. " " .. id .. " " .. hz .. " " .. vel )
+    engine.start(layer,id, hz,vel)
+    lit[current_layer][id] = {}
+    lit[current_layer][id].x = x
+    lit[current_layer][id].y = y
 	else
+	 
 	 lit[current_layer][id] = nil
    engine.stop(layer,id)
 	end
@@ -703,6 +735,7 @@ end
 
 function grid_note(e,layer)
   local note = ((7-e.y)*5) + e.x
+  -- print('grid note',note)
 	local hz = esea.getHzET(note) 
 	if layer == nil then
 		 layer = current_layer
@@ -711,12 +744,12 @@ function grid_note(e,layer)
 	hz = hz * loct[layer]
   if e.state > 0 then
     if nvoices < MAX_NUM_VOICES then
-      makenote(1,e.id,layer,hz,vel,e.x,e.y) 
+      makenote(1,e.id,layer,hz,vel,e.x,e.y,nil) 
       nvoices = nvoices + 1
     end
   else
     if lit[current_layer][e.id] ~= nil then
-      makenote(0,e.id,layer,hz,vel,e.x,e.y)
+      makenote(0,e.id,layer,hz,vel,e.x,e.y,nil)
      	lit[current_layer][e.id] = nil
       nvoices = nvoices - 1
     end

@@ -7,6 +7,7 @@ local notes = {"C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"}
 -- local colours = {7,0,2,0,2,2,0,2,0,2,0,2}
 local colours = {7,2,0,2,0,2,0,2,2,0,2,0}
 
+    
 function esea.getHz(deg,oct)
   return base * ratios[deg] * (2^oct)
 end
@@ -24,6 +25,7 @@ function esea.note_colour(x,y)
   local note = ((7-y)*5) + x
 	return colours[((note-3)%12)+1]
 end
+
 
 
 return esea
