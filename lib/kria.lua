@@ -9,7 +9,7 @@
 --  in other scripts
 --  see how far I get in this first go 
 
-local scales = require 'kria_midi/lib/scales'
+local scales = require 'islands/lib/scales'
 local tabutil = require 'tabutil'
 
 local function newempty(n,v)
