@@ -19,18 +19,14 @@ local util = require 'util'
 engine.name = "MT7"
 local g = grid.connect()
 
-local soundscaper = require 'Islands/lib/soundscaper'
 local kria = require 'Islands/lib/kria'
 
 local options = {}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
 options.STEP_LENGTH_DIVIDERS = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
 
-
 local BeatClock = require 'Islands/lib/beattest'
 local clk = BeatClock.new()
-
-
 
 local root = { x=5, y=5 }
 local lit = {}
@@ -48,10 +44,6 @@ loct[1] = 1
 loct[2] = 1
 loct[3] = 1
 loct[4] = 1
-
--- TODO 
--- grid lighting using scale (or just white notes lit)
--- mini keyboard on edit sound screen
 
 local screen_framerate = 15
 local screen_refresh_metro
@@ -698,9 +690,27 @@ function screen_playnotes()
 end
 
 function draw_playnotes()
+  local scale = {} 
+  local s = 0
+  local note = 0
+  for idx = 1,7 do
+    s = k:scale_note(idx)
+    -- print(idx,s)
+    scale[s] = 1
+  end
 	for x = 1,16 do
 		for y = 1,7 do
-			 g:led(x,y,esea.note_colour(x,y))
+		   note = ( ((7-y)*5) + x ) - 3
+		   -- g:led(x,y,note % 12)
+		   if scale[note % 12] ~= nil then 
+		     if note % 12 == root_note % 12  then
+			      g:led(x,y,7)
+	       else 
+	         g:led(x,y,2)
+	       end
+			 else 
+			   g:led(x,y,0)
+			 end
 		end
 	end
   for i,e in pairs(lit[current_layer]) do
