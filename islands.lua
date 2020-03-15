@@ -9,23 +9,23 @@
 -- Button 3 - sequencer detail page
 -- Button 2 + 3 - settings 
 --
-local islandsparams = require 'Islands/lib/islandsparams'
+local islandsparams = require 'islands/lib/islandsparams'
 local MusicUtil = require "musicutil"
-local MT = require 'Islands/lib/mt7'
+local MT = require 'islands/lib/mt7'
 local UI = require "ui"
-local esea = require 'Islands/lib/esea'
+local esea = require 'islands/lib/esea'
 local tab = require 'tabutil'
 local util = require 'util'
 engine.name = "MT7"
 local g = grid.connect()
 
-local kria = require 'Islands/lib/kria'
+local kria = require 'islands/lib/kria'
 
 local options = {}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
 options.STEP_LENGTH_DIVIDERS = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
 
-local BeatClock = require 'Islands/lib/beattest'
+local BeatClock = require 'islands/lib/beattest'
 local clk = BeatClock.new()
 
 local root = { x=5, y=5 }
