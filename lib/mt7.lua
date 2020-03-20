@@ -21,7 +21,8 @@ specs.OPAMP_A= ControlSpec.new(0.01,10,"lin",0,0.05,"ms")
 specs.OPAMP_D= ControlSpec.new(0,2,"lin",0,0.1,"ms")
 specs.OPAMP_S= ControlSpec.new(0,1,"lin",0,1,"db")
 specs.OPAMP_R= ControlSpec.new(0.01,10,"lin",0,1,"ms")
-specs.HZ = ControlSpec.new(0,5, "lin",0,1,"")
+specs.ECURV = ControlSpec.new(-10,10,"lin",0,0, "")
+specs.HZ = ControlSpec.new(0,10, "lin",0,1,"")
 specs.PHASE = ControlSpec.new(0,2*math.pi, "lin",0,0,"rad")
 specs.AMP = ControlSpec.new(0,1, "lin",0,1,"db")
 specs.VELS = ControlSpec.new(0,1, "lin",0,1,"")
@@ -131,6 +132,26 @@ function MT7.add_params()
   params:add{type = "control", id = "l1_opAmpD6",name = "l1_Osc6 Decay", controlspec = specs.OPAMP_D, action = engine.l1_opAmpD6}
   params:add{type = "control", id = "l1_opAmpS6",name = "l1_Osc6 Sustain", controlspec = specs.OPAMP_S, action = engine.l1_opAmpS6}
   params:add{type = "control", id = "l1_opAmpR6",name = "l1_Osc6 Release", controlspec = specs.OPAMP_R, action = engine.l1_opAmpR6}
+  
+  params:add{type = "control", id = "l1_opAmpCurveA1",name = "l1_Osc1 Attack Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveA1}
+  params:add{type = "control", id = "l1_opAmpCurveD1",name = "l1_Osc1 Decay Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveD1}
+  params:add{type = "control", id = "l1_opAmpCurveR1",name = "l1_Osc1 Release Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveR1}
+  params:add{type = "control", id = "l1_opAmpCurveA2",name = "l1_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveA2}
+  params:add{type = "control", id = "l1_opAmpCurveD2",name = "l1_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveD2}
+  params:add{type = "control", id = "l1_opAmpCurveR2",name = "l1_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveR2}
+  params:add{type = "control", id = "l1_opAmpCurveA3",name = "l1_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveA3}
+  params:add{type = "control", id = "l1_opAmpCurveD3",name = "l1_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveD3}
+  params:add{type = "control", id = "l1_opAmpCurveR3",name = "l1_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveR3}
+  params:add{type = "control", id = "l1_opAmpCurveA4",name = "l1_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveA4}
+  params:add{type = "control", id = "l1_opAmpCurveD4",name = "l1_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveD4}
+  params:add{type = "control", id = "l1_opAmpCurveR4",name = "l1_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveR4}
+  params:add{type = "control", id = "l1_opAmpCurveA5",name = "l1_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveA5}
+  params:add{type = "control", id = "l1_opAmpCurveD5",name = "l1_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveD5}
+  params:add{type = "control", id = "l1_opAmpCurveR5",name = "l1_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveR5}
+  params:add{type = "control", id = "l1_opAmpCurveA6",name = "l1_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveA6}
+  params:add{type = "control", id = "l1_opAmpCurveD6",name = "l1_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveD6}
+  params:add{type = "control", id = "l1_opAmpCurveR6",name = "l1_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l1_opAmpCurveR6}
+  
   params:add_separator()
   params:add_separator()
 
@@ -231,6 +252,28 @@ function MT7.add_params()
   params:add{type = "control", id = "l2_opAmpD6",name = "l2_Osc6 Decay", controlspec = specs.OPAMP_D, action = engine.l2_opAmpD6}
   params:add{type = "control", id = "l2_opAmpS6",name = "l2_Osc6 Sustain", controlspec = specs.OPAMP_S, action = engine.l2_opAmpS6}
   params:add{type = "control", id = "l2_opAmpR6",name = "l2_Osc6 Release", controlspec = specs.OPAMP_R, action = engine.l2_opAmpR6}
+  
+  
+  params:add{type = "control", id = "l2_opAmpCurveA1",name = "l2_Osc1 Attack Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveA1}
+  params:add{type = "control", id = "l2_opAmpCurveD1",name = "l2_Osc1 Decay Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveD1}
+  params:add{type = "control", id = "l2_opAmpCurveR1",name = "l2_Osc1 Release Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveR1}
+  params:add{type = "control", id = "l2_opAmpCurveA2",name = "l2_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveA2}
+  params:add{type = "control", id = "l2_opAmpCurveD2",name = "l2_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveD2}
+  params:add{type = "control", id = "l2_opAmpCurveR2",name = "l2_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveR2}
+  params:add{type = "control", id = "l2_opAmpCurveA3",name = "l2_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveA3}
+  params:add{type = "control", id = "l2_opAmpCurveD3",name = "l2_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveD3}
+  params:add{type = "control", id = "l2_opAmpCurveR3",name = "l2_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveR3}
+  params:add{type = "control", id = "l2_opAmpCurveA4",name = "l2_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveA4}
+  params:add{type = "control", id = "l2_opAmpCurveD4",name = "l2_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveD4}
+  params:add{type = "control", id = "l2_opAmpCurveR4",name = "l2_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveR4}
+  params:add{type = "control", id = "l2_opAmpCurveA5",name = "l2_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveA5}
+  params:add{type = "control", id = "l2_opAmpCurveD5",name = "l2_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveD5}
+  params:add{type = "control", id = "l2_opAmpCurveR5",name = "l2_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveR5}
+  params:add{type = "control", id = "l2_opAmpCurveA6",name = "l2_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveA6}
+  params:add{type = "control", id = "l2_opAmpCurveD6",name = "l2_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveD6}
+  params:add{type = "control", id = "l2_opAmpCurveR6",name = "l2_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l2_opAmpCurveR6}
+  
+
   params:add_separator()
   params:add_separator()
 
@@ -331,6 +374,27 @@ function MT7.add_params()
   params:add{type = "control", id = "l3_opAmpD6",name = "l3_Osc6 Decay", controlspec = specs.OPAMP_D, action = engine.l3_opAmpD6}
   params:add{type = "control", id = "l3_opAmpS6",name = "l3_Osc6 Sustain", controlspec = specs.OPAMP_S, action = engine.l3_opAmpS6}
   params:add{type = "control", id = "l3_opAmpR6",name = "l3_Osc6 Release", controlspec = specs.OPAMP_R, action = engine.l3_opAmpR6}
+
+
+  params:add{type = "control", id = "l3_opAmpCurveA1",name = "l3_Osc1 Attack Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveA1}
+  params:add{type = "control", id = "l3_opAmpCurveD1",name = "l3_Osc1 Decay Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveD1}
+  params:add{type = "control", id = "l3_opAmpCurveR1",name = "l3_Osc1 Release Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveR1}
+  params:add{type = "control", id = "l3_opAmpCurveA2",name = "l3_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveA2}
+  params:add{type = "control", id = "l3_opAmpCurveD2",name = "l3_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveD2}
+  params:add{type = "control", id = "l3_opAmpCurveR2",name = "l3_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveR2}
+  params:add{type = "control", id = "l3_opAmpCurveA3",name = "l3_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveA3}
+  params:add{type = "control", id = "l3_opAmpCurveD3",name = "l3_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveD3}
+  params:add{type = "control", id = "l3_opAmpCurveR3",name = "l3_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveR3}
+  params:add{type = "control", id = "l3_opAmpCurveA4",name = "l3_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveA4}
+  params:add{type = "control", id = "l3_opAmpCurveD4",name = "l3_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveD4}
+  params:add{type = "control", id = "l3_opAmpCurveR4",name = "l3_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveR4}
+  params:add{type = "control", id = "l3_opAmpCurveA5",name = "l3_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveA5}
+  params:add{type = "control", id = "l3_opAmpCurveD5",name = "l3_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveD5}
+  params:add{type = "control", id = "l3_opAmpCurveR5",name = "l3_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveR5}
+  params:add{type = "control", id = "l3_opAmpCurveA6",name = "l3_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveA6}
+  params:add{type = "control", id = "l3_opAmpCurveD6",name = "l3_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveD6}
+  params:add{type = "control", id = "l3_opAmpCurveR6",name = "l3_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l3_opAmpCurveR6}
+
   params:add_separator()
   params:add_separator()
 
@@ -431,6 +495,27 @@ function MT7.add_params()
   params:add{type = "control", id = "l4_opAmpD6",name = "l4_Osc6 Decay", controlspec = specs.OPAMP_D, action = engine.l4_opAmpD6}
   params:add{type = "control", id = "l4_opAmpS6",name = "l4_Osc6 Sustain", controlspec = specs.OPAMP_S, action = engine.l4_opAmpS6}
   params:add{type = "control", id = "l4_opAmpR6",name = "l4_Osc6 Release", controlspec = specs.OPAMP_R, action = engine.l4_opAmpR6}
+
+
+  params:add{type = "control", id = "l4_opAmpCurveA1",name = "l4_Osc1 Attack Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveA1}
+  params:add{type = "control", id = "l4_opAmpCurveD1",name = "l4_Osc1 Decay Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveD1}
+  params:add{type = "control", id = "l4_opAmpCurveR1",name = "l4_Osc1 Release Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveR1}
+  params:add{type = "control", id = "l4_opAmpCurveA2",name = "l4_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveA2}
+  params:add{type = "control", id = "l4_opAmpCurveD2",name = "l4_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveD2}
+  params:add{type = "control", id = "l4_opAmpCurveR2",name = "l4_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveR2}
+  params:add{type = "control", id = "l4_opAmpCurveA3",name = "l4_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveA3}
+  params:add{type = "control", id = "l4_opAmpCurveD3",name = "l4_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveD3}
+  params:add{type = "control", id = "l4_opAmpCurveR3",name = "l4_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveR3}
+  params:add{type = "control", id = "l4_opAmpCurveA4",name = "l4_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveA4}
+  params:add{type = "control", id = "l4_opAmpCurveD4",name = "l4_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveD4}
+  params:add{type = "control", id = "l4_opAmpCurveR4",name = "l4_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveR4}
+  params:add{type = "control", id = "l4_opAmpCurveA5",name = "l4_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveA5}
+  params:add{type = "control", id = "l4_opAmpCurveD5",name = "l4_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveD5}
+  params:add{type = "control", id = "l4_opAmpCurveR5",name = "l4_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveR5}
+  params:add{type = "control", id = "l4_opAmpCurveA6",name = "l4_Osc2 Attack Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveA6}
+  params:add{type = "control", id = "l4_opAmpCurveD6",name = "l4_Osc2 Decay Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveD6}
+  params:add{type = "control", id = "l4_opAmpCurveR6",name = "l4_Osc2 Release Curve", controlspec = specs.ECURV, action = engine.l4_opAmpCurveR6}
+
   params:bang()
 
 end

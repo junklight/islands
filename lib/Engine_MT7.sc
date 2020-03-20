@@ -40,12 +40,18 @@ Engine_MT7 : CroneEngine {
         \hz5_to_hz1 -> 0, \hz5_to_hz2 -> 0, \hz5_to_hz3 -> 0, \hz5_to_hz4 -> 0, \hz5_to_hz5 -> 0, \hz5_to_hz6 -> 0,
         \hz6_to_hz1 -> 0, \hz6_to_hz2 -> 0, \hz6_to_hz3 -> 0, \hz6_to_hz4 -> 0, \hz6_to_hz5 -> 0, \hz6_to_hz6 -> 0,       
 	\carrier1 -> 1,\carrier2 -> 1,\carrier3 -> 0,\carrier4 -> 0,\carrier5 -> 0,\carrier6 -> 0,
-	\opAmpA1 -> 0.05, \opAmpD1 -> 0.1, \opAmpS1 -> 1.0, \opAmpR1 -> 1.0, \opAmpCurve1 ->  -1.0,
-	\opAmpA2 -> 0.05, \opAmpD2 -> 0.1, \opAmpS2 -> 1.0, \opAmpR2 -> 1.0, \opAmpCurve2 ->  -1.0,
-	\opAmpA3 -> 0.05, \opAmpD3 -> 0.1, \opAmpS3 -> 1.0, \opAmpR3 -> 1.0, \opAmpCurve3 ->  -1.0,
-	\opAmpA4 -> 0.05, \opAmpD4 -> 0.1, \opAmpS4 -> 1.0, \opAmpR4 -> 1.0, \opAmpCurve4 ->  -1.0,
-	\opAmpA5 -> 0.05, \opAmpD5 -> 0.1, \opAmpS5 -> 1.0, \opAmpR5 -> 1.0, \opAmpCurve5 ->  -1.0,
-	\opAmpA6 -> 0.05, \opAmpD6 -> 0.1, \opAmpS6 -> 1.0, \opAmpR6 -> 1.0, \opAmpCurve6 ->  -1.0;
+	\opAmpA1 -> 0.05, \opAmpD1 -> 0.1, \opAmpS1 -> 1.0, \opAmpR1 -> 1.0, 
+	\opAmpA2 -> 0.05, \opAmpD2 -> 0.1, \opAmpS2 -> 1.0, \opAmpR2 -> 1.0, 
+	\opAmpA3 -> 0.05, \opAmpD3 -> 0.1, \opAmpS3 -> 1.0, \opAmpR3 -> 1.0, 
+	\opAmpA4 -> 0.05, \opAmpD4 -> 0.1, \opAmpS4 -> 1.0, \opAmpR4 -> 1.0, 
+	\opAmpA5 -> 0.05, \opAmpD5 -> 0.1, \opAmpS5 -> 1.0, \opAmpR5 -> 1.0, 
+	\opAmpA6 -> 0.05, \opAmpD6 -> 0.1, \opAmpS6 -> 1.0, \opAmpR6 -> 1.0, 
+	\opAmpCurveA1 ->  0.0, \opAmpCurveD1 ->  0.0, \opAmpCurveR1 ->  0.0,
+	\opAmpCurveA2 ->  0.0, \opAmpCurveD2 ->  0.0, \opAmpCurveR2 ->  0.0,
+	\opAmpCurveA3 ->  0.0, \opAmpCurveD3 ->  0.0, \opAmpCurveR3 ->  0.0,
+	\opAmpCurveA4 ->  0.0, \opAmpCurveD4 ->  0.0, \opAmpCurveR4 ->  0.0,
+	\opAmpCurveA5 ->  0.0, \opAmpCurveD5 ->  0.0, \opAmpCurveR5 ->  0.0,
+	\opAmpCurveA6 ->  0.0, \opAmpCurveD6 ->  0.0, \opAmpCurveR6 ->  0.0,
       );
 
       sdef  = SynthDef.new(\ifm7, {
@@ -69,21 +75,27 @@ Engine_MT7 : CroneEngine {
 	// boolean if the carrier is output
 	carrier1=1,carrier2=1,carrier3=0,carrier4=0,carrier5=0,carrier6=0,
 	// operator amplitude envelopes
-	opAmpA1=0.05, opAmpD1=0.1, opAmpS1=1.0, opAmpR1=1.0, opAmpCurve1= -1.0,
-	opAmpA2=0.05, opAmpD2=0.1, opAmpS2=1.0, opAmpR2=1.0, opAmpCurve2= -1.0,
-	opAmpA3=0.05, opAmpD3=0.1, opAmpS3=1.0, opAmpR3=1.0, opAmpCurve3= -1.0,
-	opAmpA4=0.05, opAmpD4=0.1, opAmpS4=1.0, opAmpR4=1.0, opAmpCurve4= -1.0,
-	opAmpA5=0.05, opAmpD5=0.1, opAmpS5=1.0, opAmpR5=1.0, opAmpCurve5= -1.0,
-	opAmpA6=0.05, opAmpD6=0.1, opAmpS6=1.0, opAmpR6=1.0, opAmpCurve6= -1.0;
+	opAmpA1=0.05, opAmpD1=0.1, opAmpS1=1.0, opAmpR1=1.0, 
+	opAmpA2=0.05, opAmpD2=0.1, opAmpS2=1.0, opAmpR2=1.0, 
+	opAmpA3=0.05, opAmpD3=0.1, opAmpS3=1.0, opAmpR3=1.0, 
+	opAmpA4=0.05, opAmpD4=0.1, opAmpS4=1.0, opAmpR4=1.0, 
+	opAmpA5=0.05, opAmpD5=0.1, opAmpS5=1.0, opAmpR5=1.0, 
+	opAmpA6=0.05, opAmpD6=0.1, opAmpS6=1.0, opAmpR6=1.0, 
+  opAmpCurveA1 = 0.0, opAmpCurveD1 = 0.0, opAmpCurveR1 = 0.0,
+	opAmpCurveA2 = 0.0, opAmpCurveD2 = 0.0, opAmpCurveR2 = 0.0,
+	opAmpCurveA3 = 0.0, opAmpCurveD3 = 0.0, opAmpCurveR3 = 0.0,
+	opAmpCurveA4 = 0.0, opAmpCurveD4 = 0.0, opAmpCurveR4 = 0.0,
+	opAmpCurveA5 = 0.0, opAmpCurveD5 = 0.0, opAmpCurveR5 = 0.0,
+	opAmpCurveA6 = 0.0, opAmpCurveD6 = 0.0, opAmpCurveR6 = 0.0;
 
         var ctrls, mods, osc, op_env, chans, chan_vec, osc_mix, opEnv1, opEnv2, opEnv3, opEnv4, opEnv5, opEnv6,kilnod;
 
-	opEnv1 = EnvGen.kr(Env.adsr(opAmpA1,opAmpD1,opAmpS1,opAmpR1,1.0, opAmpCurve1),gate,doneAction:0);
-	opEnv2 = EnvGen.kr(Env.adsr(opAmpA2,opAmpD2,opAmpS2,opAmpR2,1.0, opAmpCurve2),gate,doneAction:0);
-	opEnv3 = EnvGen.kr(Env.adsr(opAmpA3,opAmpD3,opAmpS3,opAmpR3,1.0, opAmpCurve3),gate,doneAction:0);
-	opEnv4 = EnvGen.kr(Env.adsr(opAmpA4,opAmpD4,opAmpS4,opAmpR4,1.0, opAmpCurve4),gate,doneAction:0);
-	opEnv5 = EnvGen.kr(Env.adsr(opAmpA5,opAmpD5,opAmpS5,opAmpR5,1.0, opAmpCurve5),gate,doneAction:0);
-	opEnv6 = EnvGen.kr(Env.adsr(opAmpA6,opAmpD6,opAmpS6,opAmpR6,1.0, opAmpCurve6),gate,doneAction:0);
+	opEnv1 = EnvGen.kr(Env.adsr(opAmpA1,opAmpD1,opAmpS1,opAmpR1,1.0, [-1.0 * opAmpCurveA1, opAmpCurveD1, opAmpCurveR1]),gate,doneAction:0);
+	opEnv2 = EnvGen.kr(Env.adsr(opAmpA2,opAmpD2,opAmpS2,opAmpR2,1.0, [-1.0 * opAmpCurveA2, opAmpCurveD2, opAmpCurveR2]),gate,doneAction:0);
+	opEnv3 = EnvGen.kr(Env.adsr(opAmpA3,opAmpD3,opAmpS3,opAmpR3,1.0, [-1.0 * opAmpCurveA3, opAmpCurveD3, opAmpCurveR3]),gate,doneAction:0);
+	opEnv4 = EnvGen.kr(Env.adsr(opAmpA4,opAmpD4,opAmpS4,opAmpR4,1.0, [-1.0 * opAmpCurveA4, opAmpCurveD4, opAmpCurveR4]),gate,doneAction:0);
+	opEnv5 = EnvGen.kr(Env.adsr(opAmpA5,opAmpD5,opAmpS5,opAmpR5,1.0, [-1.0 * opAmpCurveA5, opAmpCurveD5, opAmpCurveR5]),gate,doneAction:0);
+	opEnv6 = EnvGen.kr(Env.adsr(opAmpA6,opAmpD6,opAmpS6,opAmpR6,1.0, [-1.0 * opAmpCurveA6, opAmpCurveD6, opAmpCurveR6]),gate,doneAction:0);
 
         // the 6 oscillators, their frequence, phase and amplitude
 	ctrls = [[ Lag.kr(hz * hz1,0.01), phase1, Lag.kr(amp1 * vels1.max(0.01) * ivel ,0.01) * opEnv1    ],

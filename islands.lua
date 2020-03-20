@@ -797,11 +797,13 @@ local edit_display = {
 	end,
 	[A_EMODE] = function()
 			local r = params:get("l" .. current_layer .. "_opAmpA" .. eop ) 
-			return "Attack " .. eop .. ": " .. r 
+			local c = params:get("l" .. current_layer .. "_opAmpCurveA" .. eop ) 
+			return "Attack " .. eop .. ": " .. r .. " (" .. c .. ")"
 	end,
 	[D_EMODE] = function()
 			local r = params:get("l" .. current_layer .. "_opAmpD" .. eop ) 
-			return "Decay " .. eop .. ": " .. r 
+			local c = params:get("l" .. current_layer .. "_opAmpCurveD" .. eop ) 
+			return "Decay " .. eop .. ": " .. r .. " (" .. c .. ")"
 	end,
 	[S_EMODE] = function()
 			local r = params:get("l" .. current_layer .. "_opAmpS" .. eop )
@@ -809,7 +811,8 @@ local edit_display = {
 	end,
 	[R_EMODE] = function()
 			local r = params:get("l" .. current_layer .. "_opAmpR" .. eop ) 
-			return "Release " .. eop .. ": " .. r 
+			local c = params:get("l" .. current_layer .. "_opAmpCurveR" .. eop ) 
+			return "Release " .. eop .. ": " .. r .. " (" .. c .. ")"
 	end,
   default = function()
 		  return "unknown"
@@ -899,10 +902,18 @@ function edit_enc(n,delta)
 			params:delta("l" .. current_layer .. "_opAmpR".. eop ,delta) 
 		end
 	end
-	if n == 3 and emode == FREQ_EMODE then 
-	  params:delta("l" .. current_layer .. "_phase"..(eop),delta) 
-	elseif n == 3 and emode == AMP_EMODE then 
-	  params:delta("l" .. current_layer .. "_vels"..(eop),delta) 
+	if n == 3 then 
+	  if emode == FREQ_EMODE then 
+	    params:delta("l" .. current_layer .. "_phase"..(eop),delta) 
+	  elseif emode == AMP_EMODE then 
+  	  params:delta("l" .. current_layer .. "_vels"..(eop),delta) 
+    elseif emode == A_EMODE then 
+			params:delta("l" .. current_layer .. "_opAmpCurveA".. eop ,delta) 
+		elseif emode == D_EMODE then 
+			params:delta("l" .. current_layer .. "_opAmpCurveD".. eop ,delta) 
+		elseif emode == R_EMODE then 
+			params:delta("l" .. current_layer .. "_opAmpCurveR".. eop ,delta)   
+		end
 	end
 end
 
@@ -926,7 +937,7 @@ function draw_soundedit()
 	-- frequency 
 	for j = 1,6 do 
 			r = params:get("l" .. current_layer .. "_hz"..j) 
-			v = ((r/5)*13)+2
+			v = ((r/10)*13)+2
 	    g:led(10,j,math.floor(v))
 	end
 	-- amplitude
