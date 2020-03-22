@@ -97,7 +97,7 @@ local WRITE_PSETMODE = 2
 local pset_mode = OFF_PSETMODE 
 local pmode_num = "-"
 
-local buttons_down = {}
+local buttons_down = {false,false,false}
 
 -- SOFTCUT 
 local loopone = 0
