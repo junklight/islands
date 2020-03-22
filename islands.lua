@@ -20,6 +20,7 @@ engine.name = "MT7"
 local g = grid.connect()
 
 local kria = require 'islands/lib/kria'
+local kriastore = "islands/kria.data"
 
 local options = {}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
@@ -56,8 +57,10 @@ local PLAY_MODE = 0
 local EDIT_MODE = 1
 local SEQ_MODE = 2
 local SETTINGS_MODE = 3
+local KRIAPRESET_MODE = 4
 -- modes as above ^^
 local mode = PLAY_MODE
+local oldmode = KRIAPRESET_MODE
 
 -- edit modes 
 local OFF_EMODE = 0
@@ -257,7 +260,7 @@ end
 function init()
   softcut.reset()
   softcut.buffer_clear()
-  k = kria.loadornew("Islands/kria.data")
+  k = kria.loadornew(kriastore)
   k:init(make_note)
   clk:add_clock_params()
 	params:add{type = "option", id = "step_length", name = "step length", options = options.STEP_LENGTH_NAMES, default = 6,
@@ -321,7 +324,7 @@ end
 
 function g.key(x, y, z)
   -- print("key",x,y,z)
-	if mode == SEQ_MODE then 
+	if mode == SEQ_MODE or mode == KRIAPRESET_MODE then 
 	    k:event(x,y,z)
 			gridredraw()
 			return
@@ -393,6 +396,8 @@ function gridredraw()
 		else 
 			k:draw(g)
 		end
+  elseif mode == KRIAPRESET_MODE then 
+    k:draw_presets(g)
 	elseif mode == SETTINGS_MODE then 
 	  draw_settings()
 	end
@@ -467,16 +472,18 @@ function key(n,z)
 	if n == 2 and z == 1 then 
 		if mode == PLAY_MODE then
 			 mode = EDIT_MODE 
-		elseif mode == SEQ_MODE then 
+		elseif mode == SEQ_MODE or mode == KRIAPRESET_MODE then 
 			 mode = EDIT_MODE
-		elseif mode == EDIT_MODE then 
+		elseif mode == EDIT_MODE  then 
 			 mode = PLAY_MODE 
 		elseif mode == SETTINGS_MODE then
 			 mode = PLAY_MODE
 		end
-	elseif n ==3 and z == 1 then
-		if mode == PLAY_MODE then
+	elseif n ==3 and z == 1 and buttons_down[1] == false then
+		if mode == PLAY_MODE  then
 			 mode = SEQ_MODE 
+		elseif mode == KRIAPRESET_MODE then 
+			 mode = SEQ_MODE			 
 		elseif mode == EDIT_MODE then 
 			 mode = SEQ_MODE
 		elseif mode == SEQ_MODE then 
@@ -484,6 +491,13 @@ function key(n,z)
 		elseif mode == SETTINGS_MODE then
 			 mode = SEQ_MODE
 		end
+  elseif n ==3 and z == 1 and buttons_down[1] == true then
+    if mode ~= KRIAPRESET_MODE then
+      oldmode = mode 
+      mode = KRIAPRESET_MODE
+    else 
+      mode = oldmode
+    end
 	end
 	if z == 1 then
 	  if (n == 2 and buttons_down[3] == true ) or (n==3 and buttons_down[2] == true ) then 
@@ -550,7 +564,7 @@ function redraw()
   	   else
   		  screen_editsound()
   		end
-  	elseif mode == SEQ_MODE then 
+  	elseif mode == SEQ_MODE or mode == KRIAPRESET_MODE then 
   		screen_kria()
   	elseif mode == SETTINGS_MODE then 
   	  screen.move(90,10)
@@ -1056,4 +1070,8 @@ function kria_enc(n,delta)
   end
 end
 
-
+function cleanup()
+	print("Cleanup")
+	k:save(kriastore)
+	print("Done")
+end

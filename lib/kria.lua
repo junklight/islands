@@ -9,7 +9,7 @@
 --  in other scripts
 --  see how far I get in this first go 
 
-local scales = require 'islands/lib/scales'
+local scales = require 'kria_midi/lib/scales'
 local tabutil = require 'tabutil'
 
 local function newempty(n,v)
@@ -157,11 +157,17 @@ function kriadata.new()
 	for idx = 1,kria.NUM_PATTERNS do 
 		t.p[idx] = kriapattern.new()
 	end
-	t.glyph = newempty(8,0)
-	for idx = 1,8 do
-		t.glyph[idx] = newempty(8,0)
-	end
 	return t
+end
+
+function kriadata:copy()
+  local i = {} 
+  setmetatable(i,kriadata)
+  i.p =  {}
+  for idx = 1,kria.NUM_PATTERNS do 
+		i.p[idx] = self.p[idx]:copy()
+	end
+	return i
 end
 
 -- TODO - tidy up anything I've not 
@@ -201,13 +207,20 @@ function kria.new()
   -- state stuff from ansible.c 
 	i.clock_period = 60
 	i.preset = 1
+	i.viewpreset = 1
 	i.note_sync = true 
 	i.loop_sync = 2
 	i.cue_div = 0
 	i.cue_steps = 3
+	i.workingpreset = kriadata.new()
   i.presetstore = {}
+  i.glyphs = {}
 	for idx = 1,kria.GRID_PRESETS do 
 		i.presetstore[idx] = kriadata.new()
+		i.glyphs[idx] = {}
+	  for jdx = 1,8 do
+		  i.glyphs[idx][jdx] = newempty(8,0)
+	  end
 	end	
   -- --------------------------------------
   i.cue_sub_count = 0
@@ -259,14 +272,25 @@ function kria:keytimer()
 						if self.key_times[self.held_keys[idx+1]] > 0 then
 							self.key_times[self.held_keys[idx+1]] = self.key_times[self.held_keys[idx+1]] - 1
 							if self.key_times[self.held_keys[idx+1]] == 0 then
-								if self.mode == kria.mPattern then
-									local tmp = self.held_keys[idx+1] 
-									if tmp < 16 then
-									  print("Copy " .. self.pattern .. " to " .. tmp)
-										self:k().p[tmp] = self:k().p[self.pattern]:copy()
-										self.pattern = tmp
-									end
-								end
+							  local x = math.floor(self.held_keys[idx+1] % 16)
+			          local y = math.floor(self.held_keys[idx+1] / 16) + 1
+			          print("longpress x " .. x .. " y " .. y)
+							  if self.preset_mode then 
+
+			            if x == 1 then
+			              print("writing preset " .. y)
+							      self.presetstore[y] = self.workingpreset:copy()
+							    end
+							  else 
+  								if self.mode == kria.mPattern then
+  									local tmp = self.held_keys[idx+1] 
+  									if tmp < 16 then
+  									  print("Copy " .. self.pattern .. " to " .. tmp)
+  										self:k().p[tmp] = self:k().p[self.pattern]:copy()
+  										self.pattern = tmp
+  									end
+							  	end
+							  end
 							end
 						end
 					end
@@ -292,7 +316,8 @@ end
 
 -- k() returns current preset 
 function kria:k()
-	return self.presetstore[self.preset]
+  return self.workingpreset
+	-- return self.presetstore[self.preset]
 end
 
 -- p() returns the current pattern
@@ -982,16 +1007,12 @@ function kria:event(x,y,z)
 		if self.key_times[index] > 0 then
 			if self.preset_mode then
 				if x == 1 then
-					if y ~= self.preset then
-						self.preset = y
+					if y ~= self.viewpreset then
+						self.viewpreset = y
 					else
-						-- in the module 
-						-- this recalls the preset as saved
-						-- but I'm not working like that for 
-						-- the moment 
-						--
+					  self.preset = self.viewpreset
+						self.workingpreset = self.presetstore[self.preset]:copy()
 					end
-				  self.preset_mode = false
 				end
 			elseif self.mode == kria.mPattern then
 				if y == 1 then
@@ -1012,7 +1033,7 @@ function kria:event(x,y,z)
 	-- so just the regular screens here
 	if self.preset_mode then 
 		if x > 8 and z == 1 then 
-			self:k().glyph[x-8][y] = kria.inv(self:k().glyph[x-8][y])
+			self.glyphs[self.viewpreset][x-8][y] = kria.inv(self.glyphs[self.viewpreset][x-8][y])
 		end
 	elseif y == 8 then
 			if z == 1 then
@@ -1669,7 +1690,6 @@ kria.draw_pages = {
 }
 
 function kria:draw(g)
-	-- this is kind of dodgy 
 	-- if this function is being called then preset
 	-- mode is false
 	self.preset_mode = false
@@ -1739,30 +1759,20 @@ function kria:scale_note(idx)
   return self.cur_scale[idx]
 end
 
--- presets are kind of separate 
--- copying the module for now 
--- but this feels clunky 
--- will come back to this after the initial release 
--- 
 -- this function should be called separately 
 -- nothing in this file calls this 
 --
 
 function kria:draw_presets(g)
-	-- this is kind of dodgy 
 	-- if this function is being called then preset
 	-- mode is true
 	self.preset_mode = true
 	g:all(0)
-	-- I want the out of use presets 
-	-- to be dimly glowing 
-	for idx = 1,8 do
-		g:led(1,idx,3)
-	end
 	g:led(1,self.preset,11)
+	g:led(1,self.viewpreset,4)
 	for xdx = 1,8 do 
 		for ydx = 1,8 do 
-			local brt = self:k().glyph[xdx][ydx] * 13
+			local brt = self.glyphs[self.viewpreset][xdx][ydx] * 13
 			g:led(xdx + 8,ydx,brt)
 		end
 	end
@@ -1790,7 +1800,8 @@ function kria.loadornew(fname)
 					setmetatable(ret.presetstore[idx].p[jdx].t[tdx],kriatrack)
 				end
 			end
-		end	
+	  end	
+	  ret.workingpreset = ret.presetstore[ret.preset]:copy()
   end
   
 	return ret
@@ -1801,7 +1812,7 @@ function kria:save(fname)
 	for k,v in ipairs(self) do
 		print("Save " .. k)
 	end
-	tabutil.save(self,data_dir .. fname)
+	tabutil.save(self,_path.data .. fname)
 end
 
 
