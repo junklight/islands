@@ -340,7 +340,7 @@ function kria:clock()
 		if self.cue_count >= self.cue_steps + 1 then  
 						self.cue_count = 0
 
-						if self.meta then  
+						if self.meta == 1 then  
 								self.meta_count = self.meta_count + 1
 								if self.meta_count > self.meta_steps[self.meta_pos] then
   									if self.meta_next > 0 then
@@ -908,7 +908,7 @@ function kria.pattern_page(k,x,y,z)
 			if z == 1 and k.cue then
 				k.meta_next = (y - 3) * 16 + x 
 				if k.meta_next > k.meta_end then 
-						self.meta_next = 1
+						k.meta_next = 1
 				end
 			elseif k.mod_mode == kria.modLoop then 
 					if z == 1 then 
