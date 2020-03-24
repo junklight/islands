@@ -113,7 +113,7 @@ local vel = 1.0
 local nvoices = 0
 -- kria
 --
-local k
+k = nil
 local note_off_list = {}
 local ids = 10000
 local clock_count = 1
@@ -258,6 +258,7 @@ local function lsync(x)
 end
 
 function init()
+  print("here")
   softcut.reset()
   softcut.buffer_clear()
   k = kria.loadornew(kriastore)
@@ -380,27 +381,31 @@ function g.key(x, y, z)
 end
 
 function gridredraw()
-  g:all(0)
-	-- display current layer - common to everything
-  g:led(current_layer,8,10)
-	if mode == PLAY_MODE then 
-		draw_playnotes()
-		draw_control_row_play()
-	elseif mode == EDIT_MODE then 
-		draw_soundedit()
-		draw_control_row_edit()
-	elseif mode == SEQ_MODE then 
-		-- not made yet
-		if preset_mode then 
-			k:draw_presets(g)
-		else 
-			k:draw(g)
-		end
-  elseif mode == KRIAPRESET_MODE then 
-    k:draw_presets(g)
-	elseif mode == SETTINGS_MODE then 
-	  draw_settings()
-	end
+  if k ~= nil then
+    g:all(0)
+  	-- display current layer - common to everything
+    g:led(current_layer,8,10)
+  	if mode == PLAY_MODE then 
+  		draw_playnotes()
+  		draw_control_row_play()
+  	elseif mode == EDIT_MODE then 
+  		draw_soundedit()
+  		draw_control_row_edit()
+  	elseif mode == SEQ_MODE then 
+  		-- not made yet
+  		if preset_mode then 
+  			k:draw_presets(g)
+  		else 
+  			k:draw(g)
+  		end
+    elseif mode == KRIAPRESET_MODE then 
+      k:draw_presets(g)
+  	elseif mode == SETTINGS_MODE then 
+  	  draw_settings()
+  	end
+  else 
+    print("Kria starting....")
+  end
   g:refresh()
 end
 
@@ -1072,6 +1077,8 @@ end
 
 function cleanup()
 	print("Cleanup")
-	k:save(kriastore)
+	if k then
+	  k:save(kriastore)
+	end
 	print("Done")
 end
