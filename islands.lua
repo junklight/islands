@@ -184,19 +184,21 @@ function make_note(track,n,oct,dur,tmul,rpt,glide)
 		-- ignore repeats and glide for now
 		-- currently 1 == C3 (60 = 59 + 1)
 		local r = rpt + 1
-		local notedur = 6  * (dur/r * tmul)
+		local notedur = dur * tmul
 		for rptnum = 1,r do
 		  midi_note = nte + ( (oct - 3) * 12 ) + root_note
 		  -- m:note_on(midi_note,100,midich)
-		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midich , note = midi_note })
-		  table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur)) - 0.1, channel = midich , note = midi_note })
+		  -- table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midich , note = midi_note })
+		  -- table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur)) - 0.1, channel = midich , note = midi_note })
+		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + 1 , channel = midich , note = midi_note })
+		  table.insert(note_list,{ action = 0 , track = track , timestamp = clock_count + notedur + 1 , channel = midich , note = midi_note })
 		end
 end
 
 function step()
 	clock_count = clock_count + 1
 	table.sort(note_list,function(a,b) return a.timestamp < b.timestamp end)
-	while note_list[1] ~= nil and note_list[1].timestamp <= clock_count do
+	while note_list[1] ~= nil and note_list[1].timestamp == clock_count do
 		if note_list[1].action == 1 then 
 		  local hz = MusicUtil.note_num_to_freq(note_list[1].note)
 		  local vel = 0.8
