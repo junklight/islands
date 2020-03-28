@@ -25,6 +25,7 @@ local kriastore = "islands/kria.data"
 local options = {}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
 options.STEP_LENGTH_DIVIDERS = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
+local STEPDIV = 8
 
 local BeatClock = require 'islands/lib/beattest'
 local clk = BeatClock.new()
@@ -187,32 +188,50 @@ function make_note(track,n,oct,dur,tmul,rpt,glide)
 		local notedur = dur * tmul
 		for rptnum = 1,r do
 		  midi_note = nte + ( (oct - 3) * 12 ) + root_note
-		  -- m:note_on(midi_note,100,midich)
-		  -- table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midich , note = midi_note })
-		  -- table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur)) - 0.1, channel = midich , note = midi_note })
-		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + 1 , channel = midich , note = midi_note })
-		  table.insert(note_list,{ action = 0 , track = track , timestamp = clock_count + notedur + 1 , channel = midich , note = midi_note })
+		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midich , note = midi_note })
+		  table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur))  , channel = midich , note = midi_note })
 		end
 end
 
+
+
 function step()
-	clock_count = clock_count + 1
-	table.sort(note_list,function(a,b) return a.timestamp < b.timestamp end)
-	while note_list[1] ~= nil and note_list[1].timestamp == clock_count do
+  if not clocked then 
+    return
+  end
+	clock_count = clock_count + ( 1 / STEPDIV )
+	-- print("clock " .. clock_count)
+	table.sort(note_list, 
+	          function(a,b) 
+	            if a.timestamp < b.timestamp then 
+	              return true  
+	            elseif a.timestamp == b.timestamp then 
+	              return a.action < b.action 
+	            else 
+	              return false
+	            end
+	           end )
+	while note_list[1] ~= nil and note_list[1].timestamp <= clock_count do
+		--print("note off " .. note_off_list[1].note)
+		
 		if note_list[1].action == 1 then 
+		  print("note on " .. note_list[1].timestamp)
 		  local hz = MusicUtil.note_num_to_freq(note_list[1].note)
 		  local vel = 0.8
 		  makenote(1,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
 		  screen_notes[note_list[1].track + 1] = note_list[1].note
 		else 
-		  local hz = MusicUtil.note_num_to_freq(note_list[1].note)
+		  print("note off " .. note_list[1].timestamp)
+      local hz = MusicUtil.note_num_to_freq(note_list[1].note)
 		  local vel = 0.8
 		  makenote(0,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
 		  screen_notes[note_list[1].track + 1] = -1
 		end
 		table.remove(note_list,1)
 	end
-	k:clock()
+	if math.floor(clock_count) == clock_count then
+	  k:clock()
+	end
 end
 
 function init_sc_buffer(n)
@@ -268,10 +287,9 @@ function init()
   clk:add_clock_params()
 	params:add{type = "option", id = "step_length", name = "step length", options = options.STEP_LENGTH_NAMES, default = 6,
   action = function(value)
-    clk.ticks_per_step = ( 96 / (options.STEP_LENGTH_DIVIDERS[value])  ) 
-    clk.steps_per_beat = ( options.STEP_LENGTH_DIVIDERS[value] ) 
-    -- clk.ticks_per_step = 24
-    -- clk.steps_per_beat = 4
+    local div = (options.STEP_LENGTH_DIVIDERS[value]) * STEPDIV
+    clk.ticks_per_step = ( 96 / div  ) 
+    clk.steps_per_beat = ( div ) 
     clk:bpm_change(clk.bpm)
     print("clock " .. clk.ticks_per_step .. " steps " .. clk.steps_per_beat)
   end}
