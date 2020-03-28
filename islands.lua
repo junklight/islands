@@ -9,7 +9,6 @@
 -- Button 3 - sequencer detail page
 -- Button 2 + 3 - settings 
 --
-local islandsparams = require 'islands/lib/islandsparams'
 local MusicUtil = require "musicutil"
 local MT = require 'islands/lib/mt7'
 local UI = require "ui"
@@ -21,6 +20,11 @@ local g = grid.connect()
 
 local kria = require 'islands/lib/kria'
 local kriastore = "islands/kria.data"
+
+local LAYER_OPTIONS = {"FM Synth", "MIDI"}
+local layer_dest = {}
+local midi_layers = {}
+local midi_channels = {}
 
 local options = {}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
@@ -148,7 +152,7 @@ end
 function write_preset(prefix,n) 
   -- write file
   local filename = n .. ".mt7preset"
-  local fd = io.open(_path.data .. "Islands/"..filename, "w+")
+  local fd = io.open(_path.data .. "islands/"..filename, "w+")
   io.output(fd)
   for k,param in pairs(params.params) do
     if param.id and param.t ~= params.tTRIGGER then
@@ -164,7 +168,7 @@ end
 function read_preset(prefix,n)
   local parampat = "\"([%s%w%p]-)\"%s*:%s*([%d%p]+)%s*"
   local filename = n .. ".mt7preset"
-  local fpath = _path.data .. "Islands/"..filename
+  local fpath = _path.data .. "islands/"..filename
   if util.file_exists(fpath) then
     local fd = io.open(fpath, "r")
     for pid, n in string.gmatch(fd:read("*all"),parampat ) do
@@ -181,15 +185,15 @@ end
 
 function make_note(track,n,oct,dur,tmul,rpt,glide)
 		local nte = k:scale_note(n)
-		-- print("[" .. track  .. "] Note " .. nte .. "/" .. oct .. " for " .. dur .. " repeats " .. rpt .. " glide " .. glide  )
+		print("[" .. track  .. "] Note " .. nte .. "/" .. oct .. " for " .. dur .. " repeats " .. rpt .. " glide " .. glide  )
 		-- ignore repeats and glide for now
 		-- currently 1 == C3 (60 = 59 + 1)
 		local r = rpt + 1
 		local notedur = dur * tmul
 		for rptnum = 1,r do
 		  midi_note = nte + ( (oct - 3) * 12 ) + root_note
-		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midich , note = midi_note })
-		  table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur))  , channel = midich , note = midi_note })
+		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midi_channels[track] , note = midi_note })
+		  table.insert(note_list,{ action = 0 , track = track , timestamp = (clock_count + (rptnum * notedur))  , channel = midi_channels[track] , note = midi_note })
 		end
 end
 
@@ -213,18 +217,26 @@ function step()
 	           end )
 	while note_list[1] ~= nil and note_list[1].timestamp <= clock_count do
 		--print("note off " .. note_off_list[1].note)
-		
+		local layer = note_list[1].track 
 		if note_list[1].action == 1 then 
 		  print("note on " .. note_list[1].timestamp)
-		  local hz = MusicUtil.note_num_to_freq(note_list[1].note)
-		  local vel = 0.8
-		  makenote(1,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
+		  if layer_dest[layer] == 1 then 
+		    local hz = MusicUtil.note_num_to_freq(note_list[1].note)
+		    local vel = 0.8
+		    makenote(1,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
+		  else 
+		    midi_layers[layer]:note_on(note_list[1].note,100,note_list[1].channel)
+		  end
 		  screen_notes[note_list[1].track + 1] = note_list[1].note
 		else 
 		  print("note off " .. note_list[1].timestamp)
-      local hz = MusicUtil.note_num_to_freq(note_list[1].note)
-		  local vel = 0.8
-		  makenote(0,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
+		  if layer_dest[layer] == 1 then 
+        local hz = MusicUtil.note_num_to_freq(note_list[1].note)
+  		  local vel = 0.8
+  		  makenote(0,note_list[1].note,note_list[1].track,hz,vel,0,0,nil)
+  		else 
+  		  midi_layers[layer]:note_off(note_list[1].note,0,note_list[1].channel)
+  		end
 		  screen_notes[note_list[1].track + 1] = -1
 		end
 		table.remove(note_list,1)
@@ -283,7 +295,7 @@ function init()
   softcut.reset()
   softcut.buffer_clear()
   k = kria.loadornew(kriastore)
-  k:init(make_note)
+  
   clk:add_clock_params()
 	params:add{type = "option", id = "step_length", name = "step length", options = options.STEP_LENGTH_NAMES, default = 6,
   action = function(value)
@@ -298,11 +310,37 @@ function init()
   clk.beats_per_bar = 4
   clk.on_select_internal = function() clk:start() end
   clk.on_select_external = function() print("external") end
-  
-	params:add_separator()
+  params:add_separator("Layer 1")
+  params:add{type = "option", id = "layer1dest", name = "Layer 1 Destination", options = LAYER_OPTIONS, default = 1, 
+    action=function(x) layer_dest[1] = x end}
+  params:add{type = "number", id = "layer1mididev", name = "Layer 1 Midi Device", default = 1, min=1, max=4 , 
+    action = function(value) midi_layers[1] = midi.connect(value) end }
+  params:add{type = "number", id = "layer1midichannel", name = "Layer 1 Midi Channel" , default = 1, min=1, max=16,
+    action = function(v) midi_channels[1] = v end }
+  params:add_separator("Layer 2")
+  params:add{type = "option", id = "layer2dest", name = "Layer 2 Destination", options = LAYER_OPTIONS, default = 1, 
+    action=function(x) layer_dest[2] = x end}
+  params:add{type = "number", id = "layer2mididev", name = "Layer 2 Midi Device", default = 1, min=1, max=4 , 
+    action = function(value) midi_layers[2] = midi.connect(value) end }
+  params:add{type = "number", id = "layer2midichannel", name = "Layer 2 Midi Channel" , default = 2, min=1, max=16 ,
+    action = function(v) midi_channels[2] = v end }
+  params:add_separator("Layer 3")
+  params:add{type = "option", id = "layer3dest", name = "Layer 3 Destination", options = LAYER_OPTIONS, default = 1, 
+    action=function(x) layer_dest[3] = x end}
+  params:add{type = "number", id = "layer3mididev", name = "Layer 3 Midi Device", default = 1, min=1, max=4 , action = function(value) midi_layers[3] = midi.connect(value) end }
+  params:add{type = "number", id = "layer3midichannel", name = "Layer 3 Midi Channel" , default = 3, min=1, max=16 ,
+    action = function(v) midi_channels[3] = v end }
+  params:add_separator("Layer 4")
+  params:add{type = "option", id = "layer4dest", name = "Layer 4 Destination", options = LAYER_OPTIONS, default = 1, 
+    action=function(x) layer_dest[4] = x end}
+  params:add{type = "number", id = "layer4mididev", name = "Layer 4 Midi Device", default = 1, min=1, max=4 , 
+    action = function(value) midi_layers[4] = midi.connect(value) end }
+  params:add{type = "number", id = "layer4midichannel", name = "Layer 4 Midi Channel" , default = 4, min=1, max=16 ,
+    action = function(v) midi_channels[4] = v end }
+	params:add_separator("Kria")
 	params:add{type="option",name="Note Sync",id="note_sync",options={"Off","On"},default=1, action=nsync}
 	params:add{type="option",name="Loop Sync",id="loop_sync",options={"None","Track","All"},default=1, action=lsync}
-	params:add_separator()
+	params:add_separator("Loops")
 	params:add{type="control", name="loop length 1",id="loop_length_1", 
 	  controlspec=looplenspec , 
 	  action=function(x) softcut.loop_end(1, x) end  }
@@ -315,19 +353,19 @@ function init()
 	params:add{type="control", name="loop decay 2",id="loop_decay_2", 
 	  controlspec = loopdecspec,
 	  action=function(x) softcut.pre_level(2, x) end  }
-	islandsparams.add_params()
   MT.add_params()
   
   init_sc_buffer(1)
   init_sc_buffer(2)
   audio.level_eng_cut(1)
+  -- load current state 
+	read_preset("l1_","def1")
+	read_preset("l2_","def2")
+	read_preset("l3_","def3")
+	read_preset("l4_","def4")
 
-
-
-  -- clk.on_select_external = reset_pattern
-	params:add_separator()
-	params:add_number("clock_ticks", "clock ticks", 1, 96,1)
   params:bang()
+  k:init(make_note)
   -- grid refresh timer, 15 fps
   metro_grid_redraw = metro.init{ event = function(stage) gridredraw() end, time = 1 / 15 }
   metro_grid_redraw:start()
@@ -782,6 +820,10 @@ function makenote(state,id,layer,hz,vel,x,y,n)
 	end
 end
 
+function log2(n)
+  return math.log(n) / math.log(2)
+end
+
 function grid_note(e,layer)
   local note = ((7-e.y)*5) + e.x
   -- print('grid note',note)
@@ -791,21 +833,34 @@ function grid_note(e,layer)
 	end
 	-- local grid octave adjustment 
 	hz = hz * loct[layer]
+	local midi_note = 69 + ( 12 * log2(hz/440))
+	print("midi note " .. midi_note ) 
   if e.state > 0 then
-    if nvoices < MAX_NUM_VOICES then
-      makenote(1,e.id,layer,hz,vel,e.x,e.y,nil) 
-      nvoices = nvoices + 1
+    if layer_dest[layer] == 1 then 
+      if nvoices < MAX_NUM_VOICES then
+        makenote(1,e.id,layer,hz,vel,e.x,e.y,nil) 
+        nvoices = nvoices + 1
+      end
+    else 
+      midi_layers[layer]:note_on(midi_note,100,midi_channels[layer])
+      lit[current_layer][e.id] = {}
+      lit[current_layer][e.id].x = e.x
+      lit[current_layer][e.id].y = e.y
     end
   else
     if lit[current_layer][e.id] ~= nil then
-      makenote(0,e.id,layer,hz,vel,e.x,e.y,nil)
-     	lit[current_layer][e.id] = nil
-      nvoices = nvoices - 1
+      if layer_dest[layer] == 1 then 
+        makenote(0,e.id,layer,hz,vel,e.x,e.y,nil)
+     	  lit[current_layer][e.id] = nil
+        nvoices = nvoices - 1
+      else 
+        midi_layers[layer]:note_off(midi_note,0,midi_channels[layer])
+        lit[current_layer][e.id] = nil
+      end
     end
   end
   gridredraw()
 end
-
 
 --------------------------------------------------------------
 ----  Sound Edit Mode 
@@ -1096,9 +1151,13 @@ function kria_enc(n,delta)
 end
 
 function cleanup()
-	print("Cleanup")
+	print("Saving state")
 	if k then
 	  k:save(kriastore)
 	end
+	write_preset("l1_","def1")
+	write_preset("l2_","def2")
+	write_preset("l3_","def3")
+	write_preset("l4_","def4")
 	print("Done")
 end
