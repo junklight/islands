@@ -29,6 +29,7 @@ function BeatClock.new(name)
   i:bpm_change(110)
 
   i.on_step = function(e) print("BeatClock executing step") end
+  i.on_tick = function(e) print("BeatClock executing tick") end
   i.on_start = function(e) end
   i.on_stop = function(e) end
   i.on_select_internal = function(e) print("BeatClock using internal clock") end
@@ -81,7 +82,6 @@ end
 
 --- tick
 function BeatClock:tick(dev_id)
-  
   self.current_ticks = (self.current_ticks + 1) % self.ticks_per_step
   if self.playing and self.current_ticks == 0 then
     self:advance_step()
@@ -94,6 +94,7 @@ function BeatClock:tick(dev_id)
       end
     end
   end
+  self.on_tick()
 end
 
 --- reset
@@ -133,7 +134,7 @@ end
 function BeatClock:bpm_change(bpm)
   self.bpm = bpm
   -- self.metro.time = 60/(self.ticks_per_step * self.steps_per_beat * self.bpm)
-  self.metro.time = 60/(self.ticks_per_step * ( self.steps_per_beat / 4 )  * self.bpm)
+  self.metro.time = 60/( self.ticks_per_step * self.steps_per_beat * self.bpm)
 end
 
 --- add clock params

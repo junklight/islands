@@ -198,14 +198,17 @@ function make_note(track,n,oct,dur,tmul,rpt,glide)
 end
 
 
-
 function step()
+  k:clock()
+end
+
+function tick() 
   if not clocked then 
     return
   end
-	clock_count = clock_count + ( 1 / STEPDIV )
-	-- print("clock " .. clock_count)
-	table.sort(note_list, 
+	clock_count = clock_count + ( 1 / clk.ticks_per_step )
+	--print("clock " .. clock_count)
+table.sort(note_list, 
 	          function(a,b) 
 	            if a.timestamp < b.timestamp then 
 	              return true  
@@ -241,14 +244,11 @@ function step()
 		end
 		table.remove(note_list,1)
 	end
-	if math.floor(clock_count) == clock_count then
-	  k:clock()
-	end
 end
 
 function init_sc_buffer(n)
-  softcut.level_input_cut(1, n, 0.5)
-  softcut.level_input_cut(2, n, 0.5)
+  softcut.level_input_cut(1, n, 1.0)
+  softcut.level_input_cut(2, n, 1.0)
   softcut.enable(n, 1)
   softcut.level(n, 1)
   softcut.buffer(n, n)
@@ -299,13 +299,13 @@ function init()
   clk:add_clock_params()
 	params:add{type = "option", id = "step_length", name = "step length", options = options.STEP_LENGTH_NAMES, default = 6,
   action = function(value)
-    local div = (options.STEP_LENGTH_DIVIDERS[value]) * STEPDIV
-    clk.ticks_per_step = ( 96 / div  ) 
-    clk.steps_per_beat = ( div ) 
+    clk.ticks_per_step = 96 / options.STEP_LENGTH_DIVIDERS[value]
+    clk.steps_per_beat = options.STEP_LENGTH_DIVIDERS[value] / 4
     clk:bpm_change(clk.bpm)
     print("clock " .. clk.ticks_per_step .. " steps " .. clk.steps_per_beat)
   end}
 	clk.on_step = step
+	clk.on_tick = tick
   clk.on_start = function() k:reset() end
   clk.beats_per_bar = 4
   clk.on_select_internal = function() clk:start() end
