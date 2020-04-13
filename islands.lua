@@ -189,7 +189,7 @@ function make_note(track,n,oct,dur,tmul,rpt,glide)
 		-- ignore repeats and glide for now
 		-- currently 1 == C3 (60 = 59 + 1)
 		local r = rpt + 1
-		local notedur = dur * tmul
+		local notedur = (dur/r * tmul) * 0.9
 		for rptnum = 1,r do
 		  midi_note = nte + ( (oct - 3) * 12 ) + root_note
 		  table.insert(note_list,{ action = 1 , track = track , timestamp = clock_count + ( (rptnum - 1) * notedur), channel = midi_channels[track] , note = midi_note })
@@ -245,6 +245,8 @@ table.sort(note_list,
 		table.remove(note_list,1)
 	end
 end
+
+
 
 function init_sc_buffer(n)
   softcut.level_input_cut(1, n, 1.0)
