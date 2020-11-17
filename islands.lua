@@ -471,7 +471,7 @@ end
 
 function enc(n,delta)
   if n == 1 then
-    mix:delta("output", delta)
+    params:delta("output_level", delta)
   end
   if looponeedit == 1 or looptwoedit == 1 then 
     if looponeedit == 1 then
